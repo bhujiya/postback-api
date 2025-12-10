@@ -1,14 +1,22 @@
 import os
 import json
+import time
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
+
 from google.cloud import firestore
 from google.oauth2 import service_account
 
-
-app = FastAPI()
+# Load Firestore credentials from Render environment variable
 credentials_info = json.loads(os.environ["FIREBASE_CREDENTIALS"])
 credentials = service_account.Credentials.from_service_account_info(credentials_info)
-db = firestore.Client(credentials=credentials, project=credentials_info["project_id"])
 
+db = firestore.Client(
+    credentials=credentials,
+    project=credentials_info["project_id"]
+)
+
+app = FastAPI()
 
 @app.get("/track")
 async def track(request: Request, offer: str = "unknown"):
@@ -27,7 +35,13 @@ async def track(request: Request, offer: str = "unknown"):
 
 
 @app.get("/postback")
-async def postback(click_id: str = None, payout: float = 0.0, tid: str = None, status: str = "approved", request: Request = None):
+async def postback(
+    request: Request,
+    click_id: str = None,
+    payout: float = 0.0,
+    tid: str = None,
+    status: str = "approved"
+):
     if not click_id:
         return "Missing click_id"
 
@@ -43,4 +57,3 @@ async def postback(click_id: str = None, payout: float = 0.0, tid: str = None, s
     })
 
     return "OK"
-
